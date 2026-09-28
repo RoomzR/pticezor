@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Птицезор</title>
+  <style>
+    :root {
+      --paper: #e6ebe7;
+      --ink: #1c2421;
+      --green: #1b332e;
+      --rust: #8e3b2f;
+      --line: #d7dfda;
+      --card: #fff;
+      --muted: #5c675f;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font: 15px/1.4 "Segoe UI", "Helvetica Neue", sans-serif;
+    }
+    .app { display: flex; height: 100%; min-height: 100%; }
+    aside {
+      width: 216px;
+      flex: none;
+      background: var(--green);
+      color: #f3f6f4;
+      padding: 18px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .brand { font-size: 16px; font-weight: 600; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.14); }
+    .brand small { display: block; font-weight: 400; opacity: 0.72; font-size: 12px; margin-top: 4px; line-height: 1.35; }
+    .side-note { margin: 0; font-size: 12px; opacity: 0.62; line-height: 1.45; }
+    .hero h2 { margin: 6px 0 8px; font-size: 46px; letter-spacing: -0.03em; color: var(--green); }
+    .kicker { margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a7040; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+    .choice {
+      text-align: left;
+      min-height: 196px;
+      padding: 22px;
+      border-radius: 16px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .choice strong { font-size: 28px; color: var(--ink); }
+    .choice:hover { border-color: var(--green); }
+    .prod ol { margin: 8px 0 0; padding-left: 18px; }
+    .prod li { margin: 6px 0; }
+    nav { display: flex; flex-direction: column; gap: 2px; }
+    nav button {
+      text-align: left;
+      background: transparent;
+      color: #f3f6f4;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    nav button.active { background: rgba(255, 255, 255, 0.12); }
+    main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--paper); }
+    header.top[hidden] { display: none; }
+    header.top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    header.top h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .badge { color: var(--muted); font-size: 13px; }
+    .content { padding: 20px 24px 32px; overflow: auto; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .metrics .card { border: 0; border-radius: 0; border-right: 1px solid var(--line); background: transparent; }
+    .metrics .card:last-child { border-right: 0; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .label { color: var(--muted); font-size: 13px; }
+    .num { font-size: 32px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 6px; }
+    button, .tab {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    button.primary { background: var(--green); color: var(--paper); border-color: var(--green); }
+    button.danger { color: var(--rust); border-color: #e2c7c2; }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .layout { display: grid; grid-template-columns: 1.45fr 0.75fr; gap: 12px; margin-top: 12px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+    .tab.active { background: var(--green); color: var(--paper); border-color: var(--green); }
+    .frame-wrap {
+      background: #ebe4d6;
+      border-radius: 4px;
+      min-height: 220px;
+      overflow: hidden;
+    }
+    .frame-wrap img { width: 100%; display: block; }
+    .frame-wrap { position: relative; }
+    .plan {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr 1fr;
+      pointer-events: none;
+    }
+    .plan span {
+      border: 1px solid rgba(30, 58, 52, 0.28);
+      color: #1e3a34;
+      font-size: 12px;
+      padding: 3px 5px;
+      background: transparent;
+    }
+    .plan span.hot { background: rgba(142, 59, 47, 0.16); }
+    .hall { width: 100%; height: auto; display: block; background: #f4f7f5; border-radius: 4px; }
+    .hall [data-zone], .hall [data-bay] { cursor: pointer; }
+    .hall [data-bay] { fill: transparent; }
+    .hall [data-bay]:hover { fill: rgba(30, 58, 52, 0.08); }
+    .hall-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
+    .hall-legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+    .swatch { width: 16px; height: 10px; border: 1px solid #1e3a34; box-sizing: border-box; }
+    .swatch.vestibule { background: #e4eee8; }
+    .swatch.nest { background: repeating-linear-gradient(135deg, #fbfaf6, #fbfaf6 2px, #1e3a34 2px, #1e3a34 3px); }
+    .swatch.feed { border-style: dashed; background: transparent; }
+    .swatch.zone { background: rgba(30, 58, 52, 0.22); }
+    .swatch.wait { background: rgba(142, 59, 47, 0.35); }
+    .pair { display: grid; grid-template-columns: 1.35fr 0.8fr; gap: 12px; align-items: start; }
+    .zone-box { border-top: 1px solid var(--line); padding-top: 8px; }
+    .section { margin: 18px 0 8px; font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    .section-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 0 8px; flex-wrap: wrap; }
+    .section-row .section { margin: 0; }
+    .card-title { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 13px; font-weight: 600; }
+    button.sheet {
+      display: inline-flex;
+      align-items: center;
+      flex: none;
+      background: var(--green);
+      color: #f4f7f5;
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+    .tip { position: relative; display: inline-flex; }
+    button.ask {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border-radius: 2px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--green);
+    }
+    .tip-card {
+      position: absolute;
+      z-index: 6;
+      top: 24px;
+      left: 0;
+      width: 250px;
+      padding: 10px 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.4;
+      text-align: left;
+    }
+    .metrics .card:last-child .tip-card { left: auto; right: 0; }
+    .zone-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+    .zone-card {
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      background: var(--card);
+      min-height: 92px;
+    }
+    .zone-card.on { border-color: var(--green); background: #f3f7f5; }
+    .zone-card.bad { border-color: #e2c7c2; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .chart { width: 100%; height: 220px; display: block; }
+    .charts { align-items: stretch; }
+    tr.here td { background: #f4f7f5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th { text-align: left; color: var(--muted); font-size: 13px; padding: 8px 6px; }
+    td { padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+    tr.pending td { color: var(--rust); }
+    .actions { display: flex; gap: 6px; }
+    form.stack, .stack { display: flex; flex-direction: column; gap: 10px; }
+    label { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+    input, select { font: inherit; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+    .check { flex-direction: row; align-items: center; color: var(--ink); }
+    .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .msgs { margin: 8px 0 0; padding-left: 18px; }
+    .msgs li { margin: 4px 0; }
+    .fault { color: var(--rust); font-size: 13px; margin-top: 6px; }
+    .delta { background: #f6e4df; color: var(--rust); border-radius: 8px; padding: 2px 8px; font-size: 14px; }
+    .delta.plus { background: #e5efe8; color: var(--green); }
+    .big { font-size: 26px; font-weight: 700; }
+    .menu-screen { max-width: 640px; }
+    .menu-lead { margin: 0 0 10px; color: var(--muted); }
+    .menu-list {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .menu-item {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: #fff;
+      color: var(--ink);
+      border: 0;
+      border-bottom: 1px solid #e4ebe6;
+      border-radius: 0;
+      padding: 16px 18px;
+      text-align: left;
+      box-shadow: none;
+    }
+    .menu-list .menu-item:last-child { border-bottom: 0; }
+    .menu-name { font-size: 16px; font-weight: 600; }
+    .menu-item small { margin: 0; font-size: 13px; font-weight: 400; color: var(--muted); }
+    .menu-item.on { background: #e7f0ec; color: var(--ink); box-shadow: inset 3px 0 0 var(--green); }
+    .menu-item.on small { color: var(--muted); }
+    .menu-foot { margin: 10px 2px 0; font-size: 12px; color: var(--muted); }
+    @media (max-width: 900px) {
+      .app { flex-direction: column; }
+      aside { width: auto; }
+      nav { flex-direction: row; flex-wrap: wrap; }
+      .grid2, .metrics, .layout, .pair, .charts, .choices { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">Птицезор<small>учёт секции<br>на этом компьютере</small></div>
+      <p class="side-note">Хакатон<br>«Код Будущего»<br>Белоруснефть</p>
+      <nav></nav>
+    </aside>
+    <main>
+      <header class="top">
+        <h1 id="title">Утро</h1>
+        <span class="badge" id="badge">Демо</span>
+      </header>
+      <div class="content" id="view"></div>
+    </main>
+  </div>
+  <script>
+    const view = document.querySelector("#view");
+    const title = document.querySelector("#title");
+    const badge = document.querySelector("#badge");
+    let data = { ready: false, mode: "demo" };
+    let screen = "home";
+    let product = null;
+    let zone = "1";
+    let frame = 0;
+    let playing = false;
+    let timer = null;
+    let poll = null;
+    const titles = { home: "Начало", morning: "Утро", scheme: "Схема", demo: "Ролик", cameras: "Камеры", journal: "Журнал", walk: "Куда идти" };
+    const menus = {
+      demo: [["morning", "Утро"], ["demo", "Ролик"], ["journal", "Журнал"]],
+      master: [["morning", "Утро"], ["scheme", "Схема"], ["journal", "Журнал"]],
+      worker: [["walk", "Куда идти"], ["cameras", "Камеры"]],
+    };
+    const menuChoices = [
+      ["demo", "Демо", "Показ правила"],
+      ["master", "Мастер", "Схема и сводка"],
+      ["worker", "Сотрудник", "Куда идти"],
+    ];
+    let menuIndex = 0;
+    let openTip = null;
+    let draft = null;
+    let picked = {};
+
+    function fmt(n) { return new Intl.NumberFormat("ru-RU").format(n); }
+    function tip(id, text) {
+      const on = openTip === id;
+      return `<span class="tip"><button type="button" class="ask" data-tip="${id}" aria-expanded="${on}" aria-label="Подсказка">?</button>${on ? `<span class="tip-card">${text}</span>` : ""}</span>`;
+    }
+    function stopPlay() { playing = false; if (timer) clearInterval(timer); timer = null; }
+    function stopPoll() { if (poll) clearInterval(poll); poll = null; }
+
+    async function load(mode, paint = true) {
+      const query = mode ? `?mode=${mode}` : "";
+      data = await (await fetch("/api/state" + query)).json();
+      if (data.ready) frame = Math.min(frame, Math.max(0, (data.frame_count || 1) - 1));
+      if (paint) render();
+    }
+
+    function planGrid() {
+      const rows = ["А", "Б", "В", "Г"];
+      const cols = ["1", "2", "3"];
+      const hot = new Set((data.points || []).filter((point) => point.zone === zone && point.status !== "alive").map((point) => point.cell));
+      const cells = rows.flatMap((row) => cols.map((col) => {
+        const name = row + col;
+        return `<span class="${hot.has(name) ? "hot" : ""}">${name}</span>`;
+      }));
+      return `<div class="plan">${cells.join("")}</div>`;
+    }
+
+    function picture() {
+      if (!data.ready) return "";
+      if (data.playback === "live") {
+        if (data.preview && data.preview[zone]) {
+          return `<div class="frame-wrap"><img id="shot" alt="Кадр камеры" src="/api/live/preview/${zone}?t=${Date.now()}">${planGrid()}</div>
+            <p class="label">Клетки А1–Г3 на этом кадре.</p>`;
+        }
+        return `<div class="frame-wrap" style="display:grid;place-items:center;min-height:220px"><span class="label">Кадр появится после пуска.</span></div>`;
+      }
+      return `<div class="frame-wrap"><img id="shot" alt="Кадр зоны" src="/media/${data.mode}/${zone}/${frame}">${planGrid()}</div>
+        <p class="label">Клетки А1–Г3 на этом кадре.</p>
+        <div class="row" style="margin-top:8px">
+          <button id="play" type="button">${playing ? "Пауза" : "Ролик с рамками"}</button>
+          <span class="label" id="frame-label">кадр ${frame + 1} из ${data.frame_count}${data.accelerated ? ". Время ускорено." : ""}</span>
+        </div>`;
+    }
+
+    function meters(value) { return String(value).replace(".", ","); }
+
+    function mmText(metersValue, count) {
+      const mm = Math.round(metersValue * 1000);
+      const text = mm >= 1000 ? String(mm).replace(/\B(?=(\d{3})+(?!\d))/g, " ") : String(mm);
+      return count > 1 ? `${text} × ${count}` : text;
+    }
+
+    function hallPlan(mode) {
+      const hall = data.hall;
+      if (!hall || !hall.length_m || !hall.width_m) return "";
+      const editing = mode === "edit";
+      const scale = 7;
+      const padL = 48;
+      const padR = 54;
+      const padT = 46;
+      const padB = 56;
+      const bw = hall.length_m * scale;
+      const bh = hall.width_m * scale;
+      const width = padL + bw + padR;
+      const height = padT + bh + padB;
+      const xOf = (metersValue) => padL + metersValue * scale;
+      const yOf = (metersValue) => padT + (hall.width_m - metersValue) * scale;
+      const faults = new Set(data.fault_zones || []);
+      const hot = {};
+      for (const point of data.points || []) {
+        if (point.status === "alive") continue;
+        (hot[point.zone] ||= []).push(point.cell);
+      }
+      const vestibule = hall.vestibule_m ? hall.vestibule_m[1] : 0;
+      const grid = []
+        .concat((hall.x_m || []).map((metersValue) => `<line x1="${xOf(metersValue)}" y1="${padT}" x2="${xOf(metersValue)}" y2="${padT + bh}" stroke="#ddd4c6" stroke-width="0.7"/>`))
+        .concat((hall.y_m || []).map((metersValue) => `<line x1="${padL}" y1="${yOf(metersValue)}" x2="${padL + bw}" y2="${yOf(metersValue)}" stroke="#ddd4c6" stroke-width="0.7"/>`))
+        .join("");
+      const vestibuleBlock = vestibule > 0 ? `
+          <rect x="${padL}" y="${padT}" width="${vestibule * scale}" height="${bh}" fill="#e4eee8"/>
+          <line x1="${xOf(vestibule)}" y1="${padT}" x2="${xOf(vestibule)}" y2="${padT + bh}" stroke="#1e3a34" stroke-width="1.6"/>
+          <text x="${xOf(vestibule / 2)}" y="${padT - 8}" text-anchor="middle" font-size="11" fill="#1e3a34">тамбур</text>` : "";
+      const nests = (hall.nests && hall.nests.length) ? hall.nests : (hall.nest ? [hall.nest] : []);
+      const nestBlock = nests.map((item) => {
+        const top = yOf(item.y_m + item.h_m);
+        const mid = yOf(item.y_m + item.h_m / 2);
+        return `
+          <rect x="${xOf(vestibule)}" y="${top}" width="${Math.max(0, (hall.length_m - vestibule) * scale)}" height="${item.h_m * scale}" fill="url(#nestHatch)"/>
+          <rect x="${xOf(hall.length_m / 2) - 22}" y="${mid - 7}" width="44" height="14" fill="#fbfaf6" opacity="0.9"/>
+          <text x="${xOf(hall.length_m / 2)}" y="${mid + 3}" text-anchor="middle" font-size="9" fill="#1e3a34">гнёзда</text>`;
+      }).join("");
+      const lines = (hall.lines_y_m || []).map((metersValue, index) => {
+        const y = yOf(metersValue);
+        const label = index === 0 ? `<text x="${xOf(hall.length_m) - 4}" y="${y - 3}" text-anchor="end" font-size="9" fill="#5e675f">кормление</text>` : "";
+        return `<line x1="${xOf(vestibule + 0.8)}" y1="${y}" x2="${xOf(hall.length_m - 0.6)}" y2="${y}" stroke="#1e3a34" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>${label}`;
+      }).join("");
+      const zones = (hall.zones || []).map((item) => {
+        const cells = hot[item.id] || [];
+        const active = zone === item.id;
+        const pending = cells.length > 0;
+        const fault = faults.has(item.id);
+        const bay = (hall.bays || []).find((entry) => entry.label === item.bay);
+        const colX = bay ? bay.x_m : item.x_m;
+        const colW = bay ? bay.w_m : item.w_m;
+        const cx = xOf(item.x_m + item.w_m / 2);
+        const tone = pending ? "#8e3b2f" : "#1e3a34";
+        const hit = editing ? "" : `data-zone="${item.id}"`;
+        return `<g ${hit} pointer-events="${editing ? "none" : "visiblePainted"}">
+          <rect x="${xOf(colX)}" y="${padT}" width="${colW * scale}" height="${bh}" fill="${active ? "rgba(30,58,52,0.08)" : "rgba(30,58,52,0.03)"}"/>
+          <rect x="${xOf(item.x_m)}" y="${yOf(item.y_m + item.h_m)}" width="${item.w_m * scale}" height="${item.h_m * scale}" fill="${pending ? "rgba(142,59,47,0.34)" : "rgba(30,58,52,0.2)"}" stroke="${tone}" stroke-width="${active ? 2.6 : 1}" ${fault && !pending ? 'stroke-dasharray="3 2"' : ""}/>
+          <line x1="${cx}" y1="30" x2="${cx}" y2="${yOf(item.y_m + item.h_m)}" stroke="${tone}" stroke-width="0.8"/>
+          <circle cx="${cx}" cy="16" r="10" fill="${tone}" stroke="${active ? "#1e3a34" : "#fbfaf6"}" stroke-width="${active ? 2.4 : 2}"/>
+          <text x="${cx}" y="19.5" text-anchor="middle" font-size="11" fill="#fbfaf6">${item.id}</text>
+          <text x="${cx}" y="36" text-anchor="middle" font-size="8" fill="#5e675f">${item.bay || ""}</text>
+        </g>`;
+      }).join("");
+      const letters = (hall.axes_y || []).map((label, index) => {
+        const y = yOf((hall.y_m || [])[index] || 0);
+        const prev = index > 0 ? yOf(hall.y_m[index - 1]) : null;
+        const next = index + 1 < (hall.y_m || []).length ? yOf(hall.y_m[index + 1]) : null;
+        const tight = (prev !== null && Math.abs(y - prev) < 18) || (next !== null && Math.abs(y - next) < 18);
+        if (tight) {
+          return `<text x="14" y="${y + 3}" text-anchor="middle" font-size="8" fill="#1e3a34">${label}</text>`;
+        }
+        return `<circle cx="18" cy="${y}" r="8" fill="#fffcf7" stroke="#1e3a34" stroke-width="1"/>
+          <text x="18" y="${y + 3}" text-anchor="middle" font-size="9" fill="#1e3a34">${label}</text>`;
+      }).join("");
+      const numbers = [];
+      let lastX = -100;
+      (hall.axes_x || []).forEach((label, index) => {
+        const x = xOf((hall.x_m || [])[index] || 0);
+        const atVestibule = vestibule > 0 && Math.abs((hall.x_m[index] || 0) - vestibule) < 0.2;
+        if (x - lastX < 16) {
+          if (!atVestibule) return;
+          numbers.pop();
+        }
+        lastX = x;
+        numbers.push(`<circle cx="${x}" cy="${padT + bh + 16}" r="8" fill="#fffcf7" stroke="#1e3a34" stroke-width="1"/>
+          <text x="${x}" y="${padT + bh + 19}" text-anchor="middle" font-size="8" fill="#1e3a34">${label}</text>`);
+      });
+      const groups = [];
+      const stops = hall.x_m || [0, hall.length_m];
+      for (let index = 0; index < stops.length - 1; index += 1) {
+        const gap = Math.round((stops[index + 1] - stops[index]) * 10) / 10;
+        const last = groups[groups.length - 1];
+        if (last && last.gap === gap) {
+          last.count += 1;
+          last.end = stops[index + 1];
+        } else {
+          groups.push({ gap, count: 1, start: stops[index], end: stops[index + 1] });
+        }
+      }
+      const dimY = padT + bh + 36;
+      const dims = groups.map((group) => {
+        const mid = xOf((group.start + group.end) / 2);
+        const y = group.gap < 1 ? dimY - 3 : dimY + 11;
+        return `<text x="${mid}" y="${y}" text-anchor="middle" font-size="8" fill="#1e3a34">${mmText(group.gap, group.count)}</text>`;
+      }).join("");
+      const side = (hall.y_m || []).slice(0, -1).map((start, index) => {
+        const end = hall.y_m[index + 1];
+        const mid = yOf((start + end) / 2);
+        return `<text x="${padL + bw + 6}" y="${mid + 3}" font-size="8" fill="#1e3a34">${mmText(end - start, 1)}</text>`;
+      }).join("");
+      const bays = editing ? (hall.bays || []).map((bay) => `<rect data-bay="${bay.index}" x="${xOf(bay.x_m)}" y="${padT}" width="${bay.w_m * scale}" height="${bh}"/>`).join("") : "";
+      const chosen = (hall.zones || []).find((item) => item.id === zone);
+      const chosenLine = chosen
+        ? `Выбрана зона ${chosen.id}${chosen.bay ? `, пролёт ${chosen.bay}` : ""}.`
+        : "Зону выбирают щелчком по номеру.";
+      const drawing = hall.drawing ? ` · чертёж ${hall.drawing}` : "";
+      return `<article class="card" style="margin-bottom:12px">
+        <div class="label">${hall.title}. ${hall.place}. ${meters(hall.width_m)} м ширина × ${meters(hall.length_m)} м длина${drawing}</div>
+        <svg class="hall" viewBox="0 0 ${width} ${height}" role="img" aria-label="План зала">
+          <defs>
+            <pattern id="nestHatch" width="6" height="6" patternUnits="userSpaceOnUse">
+              <path d="M0 6 L6 0" stroke="#1e3a34" stroke-width="0.6" opacity="0.45"/>
+            </pattern>
+          </defs>
+          <g pointer-events="none">
+          <rect x="${padL}" y="${padT}" width="${bw}" height="${bh}" fill="#fbfaf6"/>
+          ${vestibuleBlock}
+          ${grid}
+          ${nestBlock}
+          ${lines}
+          ${zones}
+          <rect x="${padL}" y="${padT}" width="${bw}" height="${bh}" fill="none" stroke="#1e3a34" stroke-width="2.2"/>
+          <rect x="${padL + 3}" y="${padT + 3}" width="${Math.max(0, bw - 6)}" height="${Math.max(0, bh - 6)}" fill="none" stroke="#1e3a34" stroke-width="0.7"/>
+          ${letters}
+          ${numbers.join("")}
+          <line x1="${padL}" y1="${dimY}" x2="${padL + bw}" y2="${dimY}" stroke="#1e3a34" stroke-width="0.6"/>
+          ${dims}
+          ${side}
+          </g>
+          ${bays}
+        </svg>
+        <div class="hall-legend">
+          <span><i class="swatch vestibule"></i>тамбур</span>
+          <span><i class="swatch nest"></i>гнёзда</span>
+          <span><i class="swatch feed"></i>кормление</span>
+          <span><i class="swatch zone"></i>зона камеры</span>
+          <span><i class="swatch wait"></i>ждёт проверки</span>
+        </div>
+        <p class="note">${chosenLine} Прямоугольник на полу — зона камеры. Клетки А1–Г3 на кадре ниже, это сетка кадра.</p>
+        <p class="note">${hall.note || ""}</p>
+        ${data.bay_error ? `<p class="fault">${data.bay_error}</p>` : ""}
+      </article>`;
+    }
+
+    function plot(rows) {
+      const width = 560;
+      const height = 220;
+      const left = 28;
+      const right = 16;
+      const top = 28;
+      const bottom = 42;
+      const peak = Math.max(1, ...rows.map((row) => row.stack ? row.stack.reduce((sum, part) => sum + part.value, 0) : row.value));
+      const plotW = width - left - right;
+      const plotH = height - top - bottom;
+      const slot = plotW / Math.max(rows.length, 1);
+      const barW = Math.min(52, slot * 0.46);
+      const bars = rows.map((row, index) => {
+        const x = left + index * slot + (slot - barW) / 2;
+        const total = row.stack ? row.stack.reduce((sum, part) => sum + part.value, 0) : row.value;
+        let column = "";
+        if (row.stack) {
+          let acc = 0;
+          column = row.stack.map((part) => {
+            const h = (part.value / peak) * plotH;
+            const y = top + plotH - ((acc + part.value) / peak) * plotH;
+            acc += part.value;
+            return part.value ? `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 2)}" rx="3" fill="${part.fill}"/>` : "";
+          }).join("");
+          if (row.fault) column += `<text x="${x + barW / 2}" y="${top - 2}" text-anchor="middle" font-size="11" fill="#8e3b2f">сбой</text>`;
+        } else {
+          const h = Math.max(2, (row.value / peak) * plotH);
+          const y = top + plotH - h;
+          column = `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" fill="${row.fill}"/>`;
+        }
+        const valueY = row.fault ? top + 12 : top + plotH - ((total / peak) * plotH) - 6;
+        return `${column}
+          <text x="${x + barW / 2}" y="${Math.max(14, valueY)}" text-anchor="middle" font-size="13" fill="#1c2421">${row.text ?? total}</text>
+          <text x="${x + barW / 2}" y="${height - 14}" text-anchor="middle" font-size="12" fill="#5e675f">${row.label}</text>`;
+      }).join("");
+      return `<svg class="chart" viewBox="0 0 ${width} ${height}" role="img">
+        <line x1="${left}" y1="${top + plotH}" x2="${width - right}" y2="${top + plotH}" stroke="#ddd6c8"/>
+        <text x="2" y="${top + plotH}" font-size="11" fill="#5e675f">0</text>
+        ${bars}
+      </svg>`;
+    }
+
+    function charts() {
+      const heads = plot([
+        { label: "посажено", value: data.planted, text: fmt(data.planted), fill: "#1e3a34" },
+        { label: "видно", value: data.visible, text: fmt(data.visible), fill: "#5a7a70" },
+      ]);
+      const weight = data.weight;
+      const weightChart = !weight || weight.hidden || weight.median == null
+        ? `<p class="label">${weight && data.age_days < 5 ? "Моложе пяти суток, вес не показываем." : "Нет медианы для графика."}</p>`
+        : plot([
+            { label: "норма", value: weight.norm || 0, text: fmt(weight.norm || 0), fill: "#1e3a34" },
+            { label: "камера", value: weight.median, text: fmt(weight.median), fill: "#3c6e8f" },
+            ...(weight.control == null ? [] : [{ label: "весы", value: Math.round(weight.control), text: fmt(Math.round(weight.control)), fill: "#5a7a70" }]),
+          ]);
+      const hours = data.hours || [];
+      const activityChart = hours.length >= 2
+        ? plot(hours.slice(-8).map((row) => ({
+            label: String(row.hour),
+            value: Math.round(row.fraction * 100),
+            text: `${Math.round(row.fraction * 100)}%`,
+            fill: "#1e3a34",
+          })))
+        : data.activity && data.activity.still != null
+        ? plot([{ label: "этот разбор", value: Math.round(data.activity.still * 100), text: `${Math.round(data.activity.still * 100)}%`, fill: "#1e3a34" }])
+        : `<p class="label">Доли неподвижных ещё нет.</p>`;
+      const activityNote = hours.length >= 2
+        ? "Доля неподвижных по часам, которые уже записаны."
+        : "Один столбец: этот разбор, не график суток.";
+      const report = data.zone_report || [];
+      const pointChart = report.length
+        ? plot(report.map((item) => ({
+            label: `зона ${item.id}`,
+            stack: [
+              { value: item.pending, fill: "#8e3b2f" },
+              { value: item.dead, fill: "#1e3a34" },
+            ],
+            fault: item.fault,
+            text: String(item.pending + item.dead),
+          })))
+        : `<p class="label">Зон нет.</p>`;
+      return `
+        <div class="section-row">
+          <h2 class="section">Сводка этого разбора ${tip("charts", "Четыре карточки считают только этот разбор. Новые сутки сами не дорисовываются.")}</h2>
+          <button type="button" class="sheet" data-report="summary">Лист сводки</button>
+        </div>
+        <section class="charts">
+          <article class="card"><div class="card-title">Поголовье ${tip("chart-heads", "Два столбца этого разбора: сколько записано в журнале и сколько видно в кадре.")}</div>${heads}<p class="note">Расхождение ${fmt(data.gap)} — сигнал смотреть зоны, не пересчёт поголовья.</p></article>
+          <article class="card"><div class="card-title">Вес, г ${tip("chart-weight", "Норма учебной таблицы и медиана камеры. Третий столбец появляется, если в журнале есть контрольные весы.")}</div>${weightChart}</article>
+          <article class="card"><div class="card-title">Неподвижные, % ${tip("chart-still", "Один столбец, пока записан один разбор. Часы появятся, когда их будет больше одного.")}</div>${activityChart}<p class="note">${activityNote}</p></article>
+          <article class="card"><div class="card-title">Точки по зонам ${tip("chart-points", "Нижний слой ждёт проверки, верхний — подтверждённая падаль. Над столбцом «сбой», если тепло этой зоны врёт.")}</div>${pointChart}<p class="note">Ждёт снизу, подтверждено сверху.</p></article>
+        </section>`;
+    }
+
+    function zoneCards() {
+      const report = data.zone_report || [];
+      if (!report.length) return "";
+      return `
+        <h2 class="section">Зоны камер ${tip("zones", "На карточке видно, сколько точек ждёт мастера и сколько уже подтверждено. Щелчок открывает кадр этой зоны.")}</h2>
+        <div class="zone-cards">
+          ${report.map((item) => `<button type="button" class="zone-card ${zone === item.id ? "on" : ""} ${item.fault ? "bad" : ""}" data-zone="${item.id}">
+            <strong>Зона ${item.id}</strong>
+            <span class="label">${item.bay ? `пролёт ${item.bay}` : "участок пола"}</span>
+            <span>${item.pending} ждёт · ${item.dead} падаль</span>
+            ${item.fault ? `<span class="fault">сбой тепла</span>` : `<span class="label">${item.alive ? `${item.alive} живая` : "своих точек нет"}</span>`}
+          </button>`).join("")}
+        </div>`;
+    }
+
+    function morning() {
+      if (!data.ready) {
+        return `${hallPlan()}<div class="card">Показ ещё не открыт. Схему кладут в разделе «Схема», ролик — в «Демо», камеру — в «Камеры».</div>`;
+      }
+      const zones = data.zones && data.zones.length ? data.zones : ["1", "2"];
+      if (!zones.includes(zone)) zone = zones[0];
+      const w = data.weight;
+      const weightBlock = w.hidden && data.age_days < 5
+        ? `<div class="big">не показываем</div><div class="label">моложе пяти суток</div>`
+        : w.hidden
+        ? `<div class="big">нет рамок</div><div class="label">в кадре не на чем считать медиану</div>`
+        : `<div class="big">${fmt(w.median)} г <span class="${w.delta_pct < 0 ? "delta" : "delta plus"}">${w.delta_pct > 0 ? "+" : ""}${w.delta_pct}%</span></div>
+           <div class="label">норма кросса на ${data.age_days}-е сутки ${fmt(w.norm)} г</div>
+           ${controlLine(w)}
+           ${data.detector_note ? `<div class="label">Медиана рамок по контрасту, не контрольные весы.</div>` : ""}`;
+      const phone = data.activity.phone
+        ? "сообщение лежит в списке на этом экране"
+        : "порог для смены не пройден";
+      const seenLabel = data.detector_note ? "Рамок по контрасту" : "Видно в зонах камер";
+      const faults = data.fault_zones || [];
+      const faultHere = faults.includes(zone);
+      const faultLine = faultHere
+        ? `<div class="fault">Пол и много пятен холодные сразу: сбой тепловизора в этой зоне, точки из этого куска не ставятся.</div>`
+        : data.thermal_fault && faults.length
+        ? `<div class="note">Сбой тепловизора в зоне ${faults.join(" и ")}. На этом кадре свои точки остаются.</div>`
+        : data.thermal_fault
+        ? `<div class="fault">Пол и много пятен холодные сразу: сбой тепловизора, точки из этого куска не ставятся.</div>`
+        : "";
+      const detail = data.activity.detail ? `${data.activity.detail}. ` : "";
+      const activityTitle = data.activity.text === "ниже обычной" ? "ниже обычной для этого часа" : data.activity.text;
+      const rows = (data.points || []).map((p) => {
+        const wait = p.status === "pending";
+        const status = p.status === "dead" ? "подтверждено, падаль" : p.status === "alive" ? "живая, в падёж не входит" : "ждёт проверки";
+        const who = p.marked_at ? `мастер, ${p.marked_at.replace(/^падаль, |^живая, /, "")}` : "–";
+        const actions = wait && product !== "worker" ? `<div class="actions"><button class="danger" data-id="${p.id}" data-status="dead" type="button">падаль</button><button data-id="${p.id}" data-status="alive" type="button">живая</button></div>` : "";
+        return `<tr class="${wait ? "pending" : ""} ${p.zone === zone ? "here" : ""}"><td>${p.t_label}</td><td>${p.cell}</td><td>зона ${p.zone}, ${p.heat}</td><td>${status}</td><td>${who}</td><td>${actions}</td></tr>`;
+      }).join("");
+      return `
+        <div class="row" style="margin-bottom:12px">
+          <button type="button" id="use-demo" class="${data.mode === "demo" ? "primary" : ""}">Утро показа</button>
+          <button type="button" id="use-live" class="${data.mode === "live" ? "primary" : ""}">Утро камер</button>
+        </div>
+        <section class="metrics">
+          <article class="card metric"><div class="card-title">Посажено по журналу ${tip("planted", "Число из журнала посадки. Его вписывают в разделе «Журнал».")}</div><div class="num">${fmt(data.planted)}</div></article>
+          <article class="card metric"><div class="card-title">${seenLabel} ${tip("visible", "Сумма птиц, которых рамки нашли в зонах камер.")}</div><div class="num">${fmt(data.visible)}</div></article>
+          <article class="card metric"><div class="card-title">Расхождение ${tip("gap", "Разница журнала и кадра. Это сигнал смотреть зоны, не пересчёт поголовья.")}</div><div class="num">${fmt(data.gap)}</div>${data.visible === 0 ? `<div class="label">в кадре пусто, в падёж это не входит</div>` : ""}</article>
+        </section>
+        <h2 class="section">Зал ${tip("hall", "Прямоугольник на полу — зона камеры. Буквы А–Ж и номера 1–18 — оси здания. Клетки А1–Г3 рисуются на кадре.")}</h2>
+        ${hallPlan()}
+        ${zoneCards()}
+        <h2 class="section">Кадр зоны ${zone} ${tip("frame", "Кадр выбранной зоны. Сетка А1–Г3 делит этот кадр. Оси здания остаются на плане выше.")}</h2>
+        <section class="layout">
+          <article class="card">
+            ${picture()}
+            ${faultLine}
+          </article>
+          <div class="stack">
+            <article class="card"><div class="card-title">Падёж за сутки ${tip("deaths", "Подтверждено — мастер нажал «падаль». Ждёт — правило открыло точку, решение ещё не записано.")}</div><div class="big">${data.deaths_confirmed} подтверждено</div><div class="label">${data.deaths_pending} ждёт проверки</div></article>
+            <article class="card"><div class="card-title">Живой вес, медиана ${tip("weight", "Медиана рамок и учебная таблица кросса на эти сутки. Это не весы хозяйства.")}</div>${weightBlock}</article>
+            <article class="card"><div class="card-title">Активность ${tip("activity", "Доля неподвижных в этом разборе. Сообщение смене остаётся на этом экране.")}</div><div class="big">${activityTitle}</div><div class="label">${detail}${phone}.</div>${data.playback === "live" ? `<div class="label">${data.line_on ? "Линия кормления идёт." : "Линия кормления стоит."}</div>` : ""}</article>
+          </div>
+        </section>
+        ${charts()}
+        <article class="card" style="margin-top:12px">
+          <div class="card-title">Точки. Подсвечена выбранная зона. ${tip("marks", "«Падаль» подтверждает точку. «Живая» снимает её: птица в падёж не входит. Обе кнопки только у мастера.")}</div>
+          <table><thead><tr><th>Время</th><th>Клетка плана</th><th>Пара и тепло</th><th>Статус</th><th>Кто отметил</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="6">Точек нет</td></tr>`}</tbody></table>
+          <p class="note">${data.heat_note || ""} ${data.detector_note || ""}</p>
+        </article>
+        ${inbox()}`;
+    }
+
+    function controlLine(w) {
+      if (w.control == null) return "";
+      if (w.hidden || w.median == null) return `<div class="label">контрольные весы ${fmt(Math.round(w.control))} г</div>`;
+      const diff = Math.round(w.median - w.control);
+      const sign = diff > 0 ? "+" : "";
+      return `<div class="label">контрольные весы ${fmt(Math.round(w.control))} г, камера ${sign}${fmt(diff)} г</div>`;
+    }
+
+    function inbox() {
+      const items = [];
+      if (data.activity && data.activity.phone) {
+        const title = data.activity.text === "ниже обычной" ? "ниже обычной для этого часа" : data.activity.text;
+        items.push(`${data.clock}. Активность ${title}.`);
+      }
+      for (const point of data.points || []) {
+        if (point.status === "pending") {
+          items.push(`${point.t_label}. Клетка ${point.cell}, зона ${point.zone}, ${point.heat}. Ждёт проверки.`);
+        }
+        if (point.status === "dead") {
+          items.push(`${point.t_label}. Клетка ${point.cell}, зона ${point.zone}. Подтверждено, падаль.`);
+        }
+      }
+      const faults = data.fault_zones || [];
+      if (data.thermal_fault && faults.length) {
+        items.push(`Сбой тепловизора в зоне ${faults.join(" и ")}. Точки из этого куска не ставятся.`);
+      }
+      const body = items.length
+        ? `<ul class="msgs">${items.map((item) => `<li>${item}</li>`).join("")}</ul>`
+        : `<p class="note">Новых сообщений нет.</p>`;
+      return `<article class="card" style="margin-top:12px"><div class="label">Сообщения на этом экране</div>${body}</article>`;
+    }
+
+    function demo() {
+      return `
+        <div class="grid2">
+          <article class="card stack">
+            <strong>Готовый ролик ${tip("builtin", "Готовый ролик двух зон с учебным теплоканалом. Для показа правила падежа.")}</strong>
+            <p class="label">Две зоны, учебный теплоканал, время зала ускорено. Для показа правила падежа.</p>
+            <button class="primary" id="builtin" type="button">Открыть показ</button>
+            <p class="fault" id="builtin-error"></p>
+          </article>
+          <article class="card">
+            <strong>Свой файл</strong>
+            <form id="upload" class="stack" style="margin-top:10px">
+              <label>Зона 1, видео<input name="zone1" type="file" accept="video/*,.mp4,.avi" required></label>
+              <label>Зона 2, если есть<input name="zone2" type="file" accept="video/*,.mp4,.avi"></label>
+              <label>Теплозапись, если есть<input name="thermal" type="file" accept="video/*,.mp4,.avi"></label>
+              <label>1 секунда файла = секунд зала<input name="hall_seconds" type="number" min="0.1" step="0.1" value="1"></label>
+              <label class="check"><input name="night" type="checkbox"> Считать ролик ночью</label>
+              <label class="check"><input name="teaching" type="checkbox"> Подставить учебный теплоканал</label>
+              <div class="row">
+                <label>Посажено<input name="planted" type="number" min="0" value="32"></label>
+                <label>Сутки тура<input name="age_days" type="number" min="0" value="27"></label>
+              </div>
+              <button class="primary" type="submit">Разобрать файл</button>
+              <p class="fault" id="upload-error"></p>
+            </form>
+            <p class="label">Без теплозаписи точки падежа не открываются. Учебный канал включается только этой галкой.</p>
+          </article>
+        </div>`;
+    }
+
+    function scheme() {
+      const fields = draft && draft.needs_confirm ? `
+        <form id="hall-confirm" class="stack" style="margin-top:12px">
+          <p class="label">Размерная цепочка не сошлась. Впишите размеры с листа.</p>
+          ${draft.sheet ? `<img alt="Лист схемы" src="/api/hall/sheet?t=${Date.now()}" style="width:100%;border-radius:8px">` : ""}
+          <div class="fields">
+            <label>Длина зала, м<input name="length_m" type="number" min="20" max="200" step="0.1" required></label>
+            <label>Ширина зала, м<input name="width_m" type="number" min="8" max="40" step="0.1" required></label>
+            <label>Глубина тамбура, м<input name="vestibule_m" type="number" min="0" step="0.1" required></label>
+            <label>Зон камер<input name="zones" type="number" min="1" max="6" step="1" required></label>
+          </div>
+          <button class="primary" type="submit">Собрать план</button>
+          <p class="fault" id="hall-error"></p>
+        </form>` : "";
+      return `
+        <article class="card stack">
+          <strong>Схема птичника ${tip("scheme", "Три шага: файл плана, четыре размера если цепочка не сошлась, щелчок по пролёту для зоны камеры. Пустые числа не подставляются.")}</strong>
+          <ol>
+            <li>Положите PDF или картинку плана. Разбор идёт на этом компьютере.</li>
+            <li>Если размерная цепочка не сошлась, впишите четыре размера. Пустые числа не подставляются.</li>
+            <li>Щелчок по пролёту назначает зону камеры. Не больше шести.</li>
+          </ol>
+          <form id="hall-upload" class="stack">
+            <label>Файл схемы<input name="sheet" type="file" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg" required></label>
+            <button class="primary" type="submit">Разобрать схему</button>
+            <p class="fault" id="hall-upload-error"></p>
+          </form>
+          ${fields}
+        </article>
+        ${hallPlan("edit")}
+        <p class="note">Щелчок по пролёту добавляет или убирает зону. Не больше шести на этом компьютере.</p>`;
+    }
+
+    function cameras() {
+      const zones = (data.hall && data.hall.zones) || [];
+      const rows = zones.map((item) => `
+        <div class="zone-box">
+          <div class="label">Зона ${item.id}, пролёт ${item.bay}</div>
+          <div class="fields">
+            <label>Обычная<select data-cam="rgb" data-zone="${item.id}" name="rgb-${item.id}"></select></label>
+            <label>Тепло<select data-cam="thermal" data-zone="${item.id}" name="thermal-${item.id}"></select></label>
+          </div>
+        </div>`).join("");
+      const previewId = zones.find((item) => data.preview && data.preview[item.id]);
+      return `
+        <div class="pair">
+          <div>
+            ${hallPlan("edit")}
+            <p class="note">Щелчок по пролёту добавляет или убирает зону.</p>
+          </div>
+          <article class="card stack">
+          <div class="row">
+            <button id="scan" type="button">Найти камеры</button>
+            ${tip("cameras", "«Найти камеры» только перечисляет устройства. «Пуск» включает камеру этого компьютера. Это не зал птичника. «Стоп» гасит картинку и не стирает отметки мастера.")}
+            <span class="label" id="scan-note">Локальные устройства этого компьютера.</span>
+          </div>
+          <form id="live" class="stack">
+            ${rows || `<p class="label">На схеме ещё нет зон.</p>`}
+            <div class="card-title">Масштаб и ночь ${tip("feeder", "Длина кормушки задаёт масштаб: сантиметры на полу и пиксели в кадре. Часы ночи — когда неподвижность соседей не проверяется.")}</div>
+            <div class="fields">
+              <label>Длина кормушки, см<input name="feeder_cm" type="number" min="1" value="200"></label>
+              <label>Её длина в кадре, пиксели<input name="feeder_px" type="number" min="1" value="400"></label>
+              <label>Ночь с часа<input name="night_from" type="number" min="0" max="23" value="0"></label>
+              <label>Ночь до часа<input name="night_to" type="number" min="0" max="23" value="6"></label>
+            </div>
+            <div class="row">
+              <label>Посажено<input name="planted" type="number" min="0" value="${data.planted || 32}"></label>
+              <label>Сутки тура<input name="age_days" type="number" min="0" value="${data.age_days || 27}"></label>
+            </div>
+            <label class="check"><input name="line_on" type="checkbox"> Линия кормления сейчас идёт</label>
+            <label class="check"><input name="mask_pan" type="checkbox" checked> Поддон кормушки закрашен и в детектор не входит</label>
+            <label class="check"><input name="ack" type="checkbox"> Включится камера этого компьютера. Это не зал птичника.</label>
+            <div class="row">
+              <button class="primary" id="start" type="submit">Пуск</button>
+              <button id="stop" type="button">Стоп</button>
+              <button id="line" type="button">${data.line_on ? "Линия идёт" : "Линия стоит"}</button>
+            </div>
+          </form>
+          <p class="fault" id="live-error">${data.live_error || ""}</p>
+          <p class="label">${data.live_running ? "Камеры идут. На «Утре» картина обновляется. Остановка не стирает отметки." : "Пуск не идёт."}</p>
+          ${previewId
+            ? `<div class="frame-wrap"><img id="camshot" alt="Предпросмотр камеры" src="/api/live/preview/${previewId.id}?t=${Date.now()}"></div><p class="label">Камера этого компьютера, не зал птичника.</p>`
+            : `<div class="frame-wrap" style="display:grid;place-items:center;min-height:180px"><span class="label">Предпросмотр появится после пуска.</span></div>`}
+          </article>
+        </div>`;
+    }
+
+    function journal() {
+      if (!data.ready) return `<div class="card">Журнал откроется после показа или пуска камер.</div>`;
+      const w = data.weight || {};
+      return `
+        <article class="card">
+          <div class="card-title">Журнал ${tip("journal", "Посажено, сутки тура и контрольные весы. Запись демо и запись камер хранятся отдельно.")}</div>
+          <p class="label">Запись режима «${data.mode === "live" ? "Камеры" : "Демо"}». Утро второго режима хранится отдельно.</p>
+          <form id="journal" class="row">
+            <label>Посажено по журналу<input name="planted" type="number" min="0" value="${data.planted}"></label>
+            <label>Сутки тура<input name="age_days" type="number" min="0" value="${data.age_days}"></label>
+            <label>Контрольные весы, г<input name="control" type="number" min="0" step="1" value="${w.control ?? ""}"></label>
+            <button class="primary" type="submit">Записать</button>
+          </form>
+        </article>`;
+    }
+
+    function home() {
+      const rows = menuChoices.map(([id, label, hint], index) => `<button type="button" class="menu-item ${index === menuIndex ? "on" : ""}" data-menu="${index}" data-enter="${id}"><span class="menu-name">${label}</span><small>${hint}</small></button>`).join("");
+      return `
+        <div class="menu-screen">
+          <p class="menu-lead">Выберите, кто сейчас за компьютером.</p>
+          <div class="menu-list">${rows}</div>
+          <p class="menu-foot">Видео остаётся на этом компьютере</p>
+        </div>`;
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function saveSheet(kind, button) {
+      const mode = kind === "walk" ? "live" : (data.mode || "demo");
+      const name = kind === "walk" ? "Птицезор-обход.pdf" : "Птицезор-сводка.pdf";
+      const label = button.textContent;
+      button.disabled = true;
+      button.textContent = "Готовим лист…";
+      try {
+        const response = await fetch(`/api/report?kind=${kind}&mode=${mode}`);
+        if (!response.ok) {
+          button.textContent = "Лист ещё не из чего собрать";
+          return;
+        }
+        const blob = await response.blob();
+        const bridge = window.pywebview && window.pywebview.api;
+        if (bridge && bridge.save_pdf) {
+          const saved = await bridge.save_pdf(await blobToBase64(blob), name);
+          button.textContent = saved ? "Сохранено" : label;
+          if (saved) setTimeout(() => { button.textContent = label; }, 1600);
+          return;
+        }
+        if (window.showSaveFilePicker) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: name,
+            types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          button.textContent = "Сохранено";
+          setTimeout(() => { button.textContent = label; }, 1600);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.click();
+        URL.revokeObjectURL(url);
+        button.textContent = label;
+      } catch (error) {
+        button.textContent = error && error.name === "AbortError" ? label : "Не удалось сохранить";
+        if (!(error && error.name === "AbortError")) setTimeout(() => { button.textContent = label; }, 1600);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function walk() {
+      const report = data.zone_report || [];
+      const bayOf = Object.fromEntries(report.map((item) => [item.id, item.bay]));
+      const waiting = (data.points || []).filter((point) => point.status === "pending" || point.status === "dead");
+      const list = waiting.map((point) => {
+        const bay = bayOf[point.zone] ? `, пролёт ${bayOf[point.zone]}` : "";
+        const status = point.status === "dead" ? "Подтверждено, падаль." : "Ждёт мастера.";
+        return `<li>Зона ${point.zone}${bay}. Клетка ${point.cell}. ${point.t_label}. ${status}</li>`;
+      }).join("");
+      return `
+        <div class="section-row">
+          <h2 class="section">Куда идти ${tip("walk", "Зона, пролёт, клетка и время. Отметку «падаль» или «живая» ставит мастер.")}</h2>
+          <button type="button" class="sheet" data-report="walk">Лист обхода</button>
+        </div>
+        ${hallPlan()}
+        ${zoneCards()}
+        <article class="card" style="margin-top:12px">
+          <div class="card-title">Точки, которые ждут ${tip("line", "Линию кормления включает сотрудник. Мастер видит, идёт она или стоит, и сам её не переключает.")}</div>
+          ${list ? `<ul class="msgs">${list}</ul>` : `<p class="note">Ждать нечего. Если камеры ещё не пущены, список пуст.</p>`}
+          <button id="line" type="button" style="margin-top:10px">${data.line_on ? "Линия идёт" : "Линия стоит"}</button>
+          <p class="note">Линию переключает сотрудник. Мастер видит, идёт она или стоит.</p>
+        </article>`;
+    }
+
+    async function enterProduct(id) {
+      product = id;
+      if (id === "worker") {
+        await load("live", false);
+        screen = "walk";
+      } else if (id === "master") {
+        await load(data.demo_ready || !data.live_ready ? "demo" : "live", false);
+        screen = "morning";
+      } else {
+        await load("demo", false);
+        screen = data.ready ? "morning" : "demo";
+      }
+      render();
+    }
+
+    function renderNav() {
+      const nav = document.querySelector("nav");
+      if (screen === "home" || !product) {
+        nav.innerHTML = "";
+        return;
+      }
+      const items = [["home", "Начало"], ...menus[product]];
+      nav.innerHTML = items.map(([id, label]) => `<button type="button" data-view="${id}" class="${screen === id ? "active" : ""}">${label}</button>`).join("");
+    }
+
+    function render() {
+      title.textContent = titles[screen] || "";
+      document.querySelector("header.top").hidden = false;
+      badge.textContent = product === "worker" ? "Сотрудник" : product === "master" ? "Мастер" : product === "demo" ? "Демо" : "";
+      renderNav();
+      const body = screen === "home" ? home()
+        : screen === "walk" ? walk()
+        : screen === "demo" ? demo()
+        : screen === "cameras" ? cameras()
+        : screen === "journal" ? journal()
+        : screen === "scheme" ? scheme()
+        : morning();
+      view.innerHTML = body;
+    }
+
+    async function scan(force) {
+      const note = document.querySelector("#scan-note");
+      const selects = [...document.querySelectorAll("select[data-cam]")];
+      if (!selects.length) return;
+      if (note && force) note.textContent = "Ищем камеры…";
+      const payload = await (await fetch("/api/cameras")).json();
+      if (payload.busy) {
+        if (note) note.textContent = "Камеры уже идут. Поиск во время пуска сбивает картинку.";
+        return;
+      }
+      const cams = payload.cameras || [];
+      let assignment = [];
+      if (force) {
+        const assigned = await (await fetch("/api/cameras/assign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cameras: cams }),
+        })).json();
+        assignment = assigned.zones || [];
+      }
+      for (const select of selects) {
+        const key = `${select.dataset.zone}:${select.dataset.cam}`;
+        const current = select.value;
+        select.innerHTML = `<option value="">не подключена</option>` + cams.map((cam) => `<option value="${cam.index}">${cam.label}</option>`).join("");
+        if (force) {
+          const row = assignment.find((item) => item.id === select.dataset.zone);
+          const value = row ? row[select.dataset.cam] : null;
+          select.value = value == null ? "" : String(value);
+          picked[key] = select.value;
+        } else if (picked[key]) {
+          select.value = picked[key];
+        } else if (current) {
+          select.value = current;
+        }
+      }
+      if (note) {
+        note.textContent = cams.length
+          ? (force ? `Найдено: ${cams.length}. Камеры встали на зоны по порядку, лишняя — тепловизор.` : `Найдено: ${cams.length}`)
+          : "Камеры не найдены. Проверьте разрешение системы на камеру.";
+      }
+    }
+
+    document.body.addEventListener("click", async (event) => {
+      const reportBtn = event.target.closest("[data-report]");
+      if (reportBtn) {
+        event.preventDefault();
+        await saveSheet(reportBtn.dataset.report, reportBtn);
+        return;
+      }
+      const ask = event.target.closest("[data-tip]");
+      if (ask) {
+        event.preventDefault();
+        openTip = openTip === ask.dataset.tip ? null : ask.dataset.tip;
+        render();
+        return;
+      }
+      const nav = event.target.closest("nav button");
+      if (nav) {
+        stopPlay();
+        if (nav.dataset.view === "home") {
+          screen = "home";
+          product = null;
+          render();
+          return;
+        }
+        screen = nav.dataset.view;
+        const mode = product === "worker" || screen === "cameras" ? "live" : product === "demo" || screen === "demo" ? "demo" : data.mode;
+        await load(mode);
+        return;
+      }
+      const enter = event.target.closest("[data-enter]");
+      if (enter && screen === "home") {
+        menuIndex = Number(enter.dataset.menu);
+        await enterProduct(enter.dataset.enter);
+        return;
+      }
+      const bay = event.target.closest("[data-bay]");
+      if (bay && (screen === "scheme" || screen === "cameras")) {
+        const payload = await (await fetch("/api/hall/bay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ index: Number(bay.dataset.bay) }),
+        })).json();
+        if (payload.ok) data = payload;
+        else {
+          data.hall = payload.hall || data.hall;
+          data.bay_error = payload.error || "";
+        }
+        if (payload.ok) data.bay_error = "";
+        render();
+        return;
+      }
+      const zoneBtn = event.target.closest("[data-zone]");
+      if (zoneBtn) { zone = zoneBtn.dataset.zone; stopPlay(); render(); return; }
+      const mark = event.target.closest("[data-status]");
+      if (mark) {
+        data = await (await fetch(`/api/points/${mark.dataset.id}/mark`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: mark.dataset.status }),
+        })).json();
+        render();
+        return;
+      }
+      if (event.target.id === "play") {
+        if (playing) { stopPlay(); render(); return; }
+        if (!data.frame_count) return;
+        playing = true;
+        render();
+        timer = setInterval(() => {
+          if (!data.frame_count) return;
+          frame = (frame + 1) % data.frame_count;
+          const img = document.querySelector("#shot");
+          const label = document.querySelector("#frame-label");
+          if (img) img.src = `/media/${data.mode}/${zone}/${frame}?t=${Date.now()}`;
+          if (label) label.textContent = `кадр ${frame + 1} из ${data.frame_count}${data.accelerated ? ". Время ускорено." : ""}`;
+        }, 180);
+        return;
+      }
+      if (event.target.id === "builtin") {
+        event.target.disabled = true;
+        event.target.textContent = "Разбор…";
+        try {
+          const response = await fetch("/api/demo/builtin", { method: "POST" });
+          if (!response.ok) throw new Error("разбор");
+          data = await response.json();
+        } catch (error) {
+          event.target.disabled = false;
+          event.target.textContent = "Открыть показ";
+          const note = document.querySelector("#builtin-error");
+          if (note) note.textContent = "Показ не разобрался. Нажмите ещё раз.";
+          return;
+        }
+        screen = "morning";
+        zone = "1";
+        frame = 0;
+        render();
+        return;
+      }
+      if (event.target.id === "scan") { await scan(true); return; }
+      if (event.target.id === "use-demo" || event.target.id === "use-live") {
+        const mode = event.target.id === "use-live" ? "live" : "demo";
+        data = await (await fetch("/api/mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        })).json();
+        render();
+        return;
+      }
+      if (event.target.id === "line") {
+        const next = !data.line_on;
+        const response = await fetch("/api/live/line", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ on: next }),
+        });
+        if (response.ok) data.line_on = (await response.json()).line_on;
+        render();
+        return;
+      }
+      if (event.target.id === "stop") {
+        data = await (await fetch("/api/live/stop", { method: "POST" })).json();
+        render();
+      }
+    });
+
+    document.body.addEventListener("change", (event) => {
+      const select = event.target.closest("select[data-cam]");
+      if (!select) return;
+      picked[`${select.dataset.zone}:${select.dataset.cam}`] = select.value;
+    });
+
+    document.body.addEventListener("submit", async (event) => {
+      if (event.target.id === "upload") {
+        event.preventDefault();
+        const button = event.target.querySelector("button");
+        button.disabled = true;
+        const form = new FormData(event.target);
+        form.set("teaching", event.target.teaching.checked ? "true" : "false");
+        form.set("night", event.target.night.checked ? "true" : "false");
+        const response = await fetch("/api/demo/upload", { method: "POST", body: form });
+        if (!response.ok) {
+          button.disabled = false;
+          let detail = "Файл не разобран";
+          try { detail = (await response.json()).detail || detail; } catch (error) { /* ответ без текста */ }
+          const note = document.querySelector("#upload-error");
+          if (note) note.textContent = detail;
+          return;
+        }
+        data = await response.json();
+        screen = "morning";
+        frame = 0;
+        render();
+        return;
+      }
+      if (event.target.id === "live") {
+        event.preventDefault();
+        if (!event.target.ack.checked) {
+          const err = document.querySelector("#live-error");
+          if (err) err.textContent = "Пуск включает камеру этого компьютера. Это не зал птичника. Отметьте строку над кнопкой.";
+          return;
+        }
+        const form = new FormData(event.target);
+        const num = (name) => form.get(name) === "" ? null : Number(form.get(name));
+        const body = {
+          zones: ((data.hall && data.hall.zones) || []).map((item) => ({
+            id: item.id,
+            rgb: num(`rgb-${item.id}`),
+            thermal: num(`thermal-${item.id}`),
+          })),
+          feeder_cm: Number(form.get("feeder_cm")),
+          feeder_px: Number(form.get("feeder_px")),
+          night_from: Number(form.get("night_from")),
+          night_to: Number(form.get("night_to")),
+          planted: Number(form.get("planted")),
+          age_days: Number(form.get("age_days")),
+          line_on: event.target.line_on.checked,
+          mask_pan: event.target.mask_pan.checked,
+        };
+        const started = await (await fetch("/api/live/start", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        })).json();
+        data = await (await fetch("/api/state?mode=live")).json();
+        data.live_error = started.live_error || data.live_error;
+        data.live_running = started.live_running;
+        if (!started.ok) {
+          screen = "cameras";
+          render();
+          const err = document.querySelector("#live-error");
+          if (err) err.textContent = started.live_error || "Камера не открылась.";
+          return;
+        }
+        zone = "1";
+        screen = "morning";
+        render();
+        return;
+      }
+      if (event.target.id === "hall-upload") {
+        event.preventDefault();
+        const button = event.target.querySelector("button");
+        button.disabled = true;
+        button.textContent = "Разбор…";
+        const response = await fetch("/api/hall/upload", { method: "POST", body: new FormData(event.target) });
+        const payload = await response.json();
+        if (!response.ok) {
+          button.disabled = false;
+          button.textContent = "Разобрать схему";
+          const note = document.querySelector("#hall-upload-error");
+          if (note) note.textContent = payload.detail || "Схема не разобралась.";
+          return;
+        }
+        if (payload.ok) {
+          draft = null;
+          data = await (await fetch("/api/state?mode=" + data.mode)).json();
+          screen = "morning";
+          render();
+          return;
+        }
+        draft = payload;
+        render();
+        return;
+      }
+      if (event.target.id === "hall-confirm") {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const response = await fetch("/api/hall/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            length_m: Number(form.get("length_m")),
+            width_m: Number(form.get("width_m")),
+            vestibule_m: Number(form.get("vestibule_m")),
+            zones: Number(form.get("zones")),
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          const note = document.querySelector("#hall-error");
+          if (note) note.textContent = payload.detail || "Размеры не сошлись.";
+          return;
+        }
+        draft = null;
+        data = payload;
+        screen = "morning";
+        render();
+        return;
+      }
+      if (event.target.id === "journal") {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const payload = { planted: Number(form.get("planted")), age_days: Number(form.get("age_days")) };
+        if (form.get("control") !== "") payload.control_grams = Number(form.get("control"));
+        const response = await fetch(`/api/flock?mode=${data.mode}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+        });
+        if (!response.ok) return;
+        data = await response.json();
+        render();
+      }
+    });
+
+    document.body.addEventListener("mouseover", (event) => {
+      const item = event.target.closest("[data-menu]");
+      if (!item || screen !== "home") return;
+      menuIndex = Number(item.dataset.menu);
+      document.querySelectorAll(".menu-item").forEach((el) => el.classList.toggle("on", Number(el.dataset.menu) === menuIndex));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (screen !== "home") return;
+      if (event.key === "ArrowDown") menuIndex = (menuIndex + 1) % menuChoices.length;
+      else if (event.key === "ArrowUp") menuIndex = (menuIndex + menuChoices.length - 1) % menuChoices.length;
+      else if (event.key === "Enter") { enterProduct(menuChoices[menuIndex][0]); return; }
+      else return;
+      event.preventDefault();
+      document.querySelectorAll(".menu-item").forEach((item) => item.classList.toggle("on", Number(item.dataset.menu) === menuIndex));
+    });
+
+    poll = setInterval(async () => {
+      if (screen !== "morning" && screen !== "cameras" && screen !== "walk") return;
+      if (data.playback !== "live" && !data.live_running && screen !== "cameras") return;
+      const fresh = await (await fetch("/api/state?mode=" + (screen === "cameras" || screen === "walk" ? "live" : data.mode))).json();
+      if (screen === "morning" && fresh.ready && fresh.playback === "live") {
+        const hadPreview = Boolean(data.preview && data.preview[zone]);
+        const hasPreview = Boolean(fresh.preview && fresh.preview[zone]);
+        const changed = !data.ready || fresh.visible !== data.visible || fresh.clock !== data.clock
+          || fresh.deaths_pending !== data.deaths_pending || fresh.activity.text !== data.activity.text
+          || hadPreview !== hasPreview;
+        data = fresh;
+        if (changed) render();
+        else {
+          const img = document.querySelector("#shot, .frame-wrap img");
+          if (img) img.src = `/api/live/preview/${zone}?t=${Date.now()}`;
+        }
+      }
+      if (screen === "walk") {
+        const changed = fresh.ready !== data.ready || fresh.deaths_pending !== data.deaths_pending || fresh.line_on !== data.line_on;
+        data = fresh;
+        if (changed) render();
+      }
+      if (screen === "cameras") {
+        data.live_running = fresh.live_running;
+        data.live_error = fresh.live_error;
+        const err = document.querySelector("#live-error");
+        const shot = document.querySelector("#camshot");
+        if (err) err.textContent = fresh.live_error || "";
+        const liveZone = (fresh.hall && fresh.hall.zones || []).find((item) => fresh.preview && fresh.preview[item.id]);
+        if (shot && fresh.live_running && liveZone) shot.src = `/api/live/preview/${liveZone.id}?t=${Date.now()}`;
+      }
+    }, 1000);
+
+    load();
+  </script>
+</body>
+</html>
